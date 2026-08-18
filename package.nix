@@ -83,7 +83,7 @@ let
     inherit version;
 
     src = fetchurl {
-      url = "https://download.unstable.life/upload/fp14.0.3_lin_20251201.7z";
+      url = "https://github.com/weshford/flakepoint/releases/download/v14.0.3/flashpoint-14.0.3_linux.7z";
       sha256 = "f393a98c5c35e229a744c102b0cb53270b1b4f1b3ebd40d604f98323444a4b1f";
     };
 
@@ -99,9 +99,9 @@ let
       runHook preInstall
       mkdir -p $out/share/flashpoint
       if [ -d extracted/flashpoint ]; then
-        cp -r extracted/flashpoint/* $out/share/flashpoint/
+        cp -a extracted/flashpoint/. $out/share/flashpoint/
       else
-        cp -r extracted/* $out/share/flashpoint/
+        cp -a extracted/. $out/share/flashpoint/
       fi
       # Remove bundled Ubuntu libraries so Flashpoint uses Nix FHS libraries natively
       rm -rf $out/share/flashpoint/Libraries/lib/x86_64-linux-gnu
@@ -135,8 +135,23 @@ let
     if [ ! -d "$FLASHPOINT_DIR" ] || [ ! -f "$FLASHPOINT_DIR/start-flashpoint.sh" ]; then
       echo "Initializing Flashpoint data directory in $FLASHPOINT_DIR..."
       mkdir -p "$FLASHPOINT_DIR"
-      cp -rn "${flashpointArchive}/share/flashpoint/"* "$FLASHPOINT_DIR/"
+      cp -rn "${flashpointArchive}/share/flashpoint/." "$FLASHPOINT_DIR/"
       chmod -R u+w "$FLASHPOINT_DIR"
+    fi
+
+    # Ensure missing files/dotfiles (e.g. .preferences.defaults.json) are copied into existing data directories
+    if [ -d "${flashpointArchive}/share/flashpoint" ]; then
+      cp -rn "${flashpointArchive}/share/flashpoint/." "$FLASHPOINT_DIR/" 2>/dev/null || true
+    fi
+
+    # If preferences.json exists but was initialized with empty gameDataSources or invalid server, update/fix preferences
+    if [ -f "$FLASHPOINT_DIR/preferences.json" ]; then
+      if grep -q '"gameDataSources": \[\]' "$FLASHPOINT_DIR/preferences.json" 2>/dev/null && [ -f "$FLASHPOINT_DIR/.preferences.defaults.json" ]; then
+        echo "Updating preferences.json with default sources..."
+        cp "$FLASHPOINT_DIR/.preferences.defaults.json" "$FLASHPOINT_DIR/preferences.json"
+      fi
+      sed -i 's/"server": "Apache Webserver"/"server": "PHP Infinity Router"/g' "$FLASHPOINT_DIR/preferences.json"
+      sed -i 's/"curateServer": "Apache Webserver"/"curateServer": "Apache Ultimate Webserver"/g' "$FLASHPOINT_DIR/preferences.json"
     fi
 
     # Remove bundled old libraries if present so Flashpoint uses Nix FHS system libraries
