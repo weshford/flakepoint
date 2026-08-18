@@ -50,3 +50,18 @@ then just normally add it to your system:
 You can also install it to your proflie:
 
 `nix profile install github:weshford/flakepoint`
+
+you don't need to build it yourself either, there exists a cached built already on cachix. (i think) to use it, add it to your config.nix.
+
+```
+nix.settings = {
+  substituters = [
+    "https://cache.nixos.org/"
+    "https://weshford.cachix.org/"
+  ];
+  trusted-public-keys = [
+    "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+    "weshford.cachix.org-1:J2X3AnAYhKTJW5S3aCLoA1ckonQXVNZMQvhZA0YAufw="
+  ];
+};
+```
